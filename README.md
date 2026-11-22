@@ -8,8 +8,8 @@ Paste a video or channel link. Find moments worth clipping. Make vertical videos
 
 [![Version](https://img.shields.io/badge/version-0.9.1-7c3aed?style=for-the-badge)](https://github.com/ghostfacethegreat/devcut)
 [![Platform](https://img.shields.io/badge/platform-macOS-black?style=for-the-badge&logo=apple)](https://github.com/ghostfacethegreat/devcut)
-[![Tests](https://img.shields.io/badge/tests-66%20passing-16a34a?style=for-the-badge)](https://github.com/ghostfacethegreat/devcut/actions)
-[![License](https://img.shields.io/badge/license-proprietary-64748b?style=for-the-badge)](LICENSE)
+[![Installer checks](https://github.com/ghostfacethegreat/devcut/actions/workflows/tests.yml/badge.svg)](https://github.com/ghostfacethegreat/devcut/actions/workflows/tests.yml)
+[![License](https://img.shields.io/badge/license-proprietary-64748b?style=for-the-badge)](https://github.com/ghostfacethegreat/devcut)
 
 **[Install](#install) · [Features](#features) · [Quick start](#quick-start) · [Publishing](#social-publishing) · [Support](#support)**
 
@@ -27,23 +27,26 @@ The local worker can monitor a YouTube channel you are authorized to use and cap
 
 ## Install
 
+DevCut's public GitHub repository hosts the installer and documentation. The licensed application ZIP is delivered separately with your Owner access or customer purchase.
+
 ### One-command installer
 
-1. Download your edition ZIP from the private download supplied with your purchase or owner access.
-2. Keep it in your Downloads folder.
-3. Open Terminal and paste the matching command.
+1. Download the correct ZIP and save it in your Downloads folder.
+2. Open Terminal and paste the matching command below.
 
 **Free Owner Edition**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ghostfacethegreat/devcut/main/install.sh | bash -s -- --zip "$HOME/Downloads/DevCut-Studio-v0.9.1-OWNER.zip"
 ```
 
 **Customer Edition — $30 one-time**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ghostfacethegreat/devcut/main/install.sh | bash -s -- --zip "$HOME/Downloads/DevCut-Studio-v0.9.1-CUSTOMER.zip"
 ```
 
-The script verifies the archive's SHA-256 checksum, extracts it locally, and runs the included installer. It does not upload your ZIP, social credentials or Owner key.
+The installer verifies the ZIP's SHA-256 checksum, extracts it locally, and runs the bundled installer. It does not upload your ZIP, social credentials or Owner key.
 
 ### Alternative: Finder installation
 
@@ -103,15 +106,19 @@ Working folders:
 ## Social publishing
 
 ### Instagram Reels
+
 Requires an eligible Instagram Professional account, a Meta developer app, current publishing permissions and any required Meta app review. DevCut uses the official publishing API; it does not ask for your Instagram password.
 
 ### YouTube Shorts
+
 Requires a Google OAuth Desktop client and YouTube Data API upload scope. Confirm privacy settings before enabling unattended publishing.
 
 ### TikTok
+
 Direct Post requires an approved developer app, `video.publish` permission, user authorization and TikTok app audit for public posting. TikTok requires a preview and explicit consent for each post. Promotional logo/watermark overlays are not allowed on API-shared content under TikTok's content-sharing guidelines, so campaign-branded clips must be posted manually.
 
 ### X
+
 Automatic X publishing is not included. X API access has usage-based pricing and separate developer requirements.
 
 Publishing does not guarantee campaign approval or earnings. Check campaign rules, use connected and verified accounts, and submit post URLs within the campaign deadline.
@@ -122,9 +129,9 @@ Publishing does not guarantee campaign approval or earnings. Check campaign rule
 - **Customers:** $30 one-time for a machine-bound lifetime license; no subscription.
 - The Customer ZIP contains the public verification key only.
 - The Owner signing key is private and never belongs in GitHub or Customer builds.
-- Payment-to-license fulfillment is currently manual; Stripe checkout and webhook automation are not live.
+- Payment-to-license fulfillment is currently manual. Stripe checkout and webhook automation are not live.
 
-## Privacy and safety
+## Privacy and security
 
 - Source media, transcripts, score reports and exports stay on your Mac.
 - Platform access uses official OAuth; tokens are stored in macOS Keychain where available.
@@ -132,21 +139,17 @@ Publishing does not guarantee campaign approval or earnings. Check campaign rule
 - Do not use purchased views, bots, engagement manipulation or unauthorized footage.
 - Follow platform policies and each campaign's specific branding requirements.
 
-## Development
+See [SECURITY.md](SECURITY.md) for reporting and credential-handling guidance.
 
-The public repository contains documentation and the installer bootstrap. The licensed application packages are distributed separately.
+## Repository contents
 
-To validate the application after extracting a development package:
+This is the public distribution and documentation repository. The licensed application packages are distributed separately; the private Owner signing key is never stored here.
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt pytest
-python -m py_compile devcut_cli.py devcut_worker.py devcut_intelligence.py devcut_social.py
-pytest -q
-```
-
-CI runs repository quality checks on pushes and pull requests.
+- `install.sh` — checks the local package checksum and invokes the bundled installer.
+- `CONTRIBUTING.md` — contribution and issue guidelines.
+- `SECURITY.md` — security reporting and secret-handling guidance.
+- `SUPPORT.md` — support checklist.
+- `.github/workflows/tests.yml` — installer/bootstrap quality checks.
 
 ## Support
 
