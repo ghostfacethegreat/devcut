@@ -1,26 +1,30 @@
 #!/usr/bin/env bash
-# One-command DevCut Studio installer for macOS.
-# Customer: curl -fsSL https://raw.githubusercontent.com/ghostfacethegreat/devcut/main/install.sh | bash
-# Owner:    curl -fsSL https://raw.githubusercontent.com/ghostfacethegreat/devcut/main/install.sh | bash -s -- --owner-zip "$HOME/Downloads/DevCut-Studio-v0.9.1-OWNER.zip"
+# DevCut Studio verified macOS ZIP installer.
+# Download the OWNER or CUSTOMER ZIP first, then run:
+# curl -fsSL https://raw.githubusercontent.com/ghostfacethegreat/devcut/main/install.sh | bash -s -- --zip "$HOME/Downloads/DevCut-Studio-v0.9.1-OWNER.zip"
 set -euo pipefail
 
-OWNER_ZIP=""
+ZIP_PATH=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --owner-zip)
-      [[ $# -ge 2 ]] || { echo "Missing path after --owner-zip" >&2; exit 2; }
-      OWNER_ZIP="$2"; shift 2 ;;
+    --zip|--owner-zip|--customer-zip)
+      [[ $# -ge 2 ]] || { echo "Missing ZIP path after $1" >&2; exit 2; }
+      ZIP_PATH="$2"; shift 2 ;;
     --help|-h)
       cat <<'HELP'
-DevCut Studio installer
+DevCut Studio installer for macOS
 
-Customer install (requires a $30 lifetime license):
-  curl -fsSL https://raw.githubusercontent.com/ghostfacethegreat/devcut/main/install.sh | bash
+1. Download your ZIP and keep it in Downloads.
+2. Run one of these commands:
 
-Owner install (free; use your private Owner ZIP already downloaded):
-  curl -fsSL https://raw.githubusercontent.com/ghostfacethegreat/devcut/main/install.sh | bash -s -- --owner-zip "$HOME/Downloads/DevCut-Studio-v0.9.1-OWNER.zip"
+Owner (free for the project owner):
+  curl -fsSL https://raw.githubusercontent.com/ghostfacethegreat/devcut/main/install.sh | bash -s -- --zip "$HOME/Downloads/DevCut-Studio-v0.9.1-OWNER.zip"
 
-The Owner ZIP is read locally. Its private signing key is never uploaded.
+Customer (requires a $30 lifetime license):
+  curl -fsSL https://raw.githubusercontent.com/ghostfacethegreat/devcut/main/install.sh | bash -s -- --zip "$HOME/Downloads/DevCut-Studio-v0.9.1-CUSTOMER.zip"
+
+Alternative: extract the ZIP in Finder, then double-click Install DevCut.command.
+The ZIP is verified locally before installation. The installer never uploads your ZIP or Owner key.
 HELP
       exit 0 ;;
     *) echo "Unknown option: $1 (use --help)" >&2; exit 2 ;;
@@ -31,57 +35,48 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "DevCut Studio currently supports macOS only." >&2
   exit 1
 fi
-command -v curl >/dev/null 2>&1 || { echo "curl is required." >&2; exit 1; }
-command -v unzip >/dev/null 2>&1 || { echo "unzip is required." >&2; exit 1; }
-command -v shasum >/dev/null 2>&1 || { echo "shasum is required (normally included with macOS)." >&2; exit 1; }
+command -v unzip >/dev/null 2>&1 || { echo "unzip is required (included with macOS)." >&2; exit 1; }
+command -v shasum >/dev/null 2>&1 || { echo "shasum is required (included with macOS)." >&2; exit 1; }
 
-if [[ -n "$OWNER_ZIP" && ! -f "$OWNER_ZIP" ]]; then
-  echo "Owner ZIP not found: $OWNER_ZIP" >&2
-  echo "Download DevCut-Studio-v0.9.1-OWNER.zip and pass its local path with --owner-zip." >&2
+if [[ -z "$ZIP_PATH" ]]; then
+  if [[ -f "$HOME/Downloads/DevCut-Studio-v0.9.1-OWNER.zip" ]]; then
+    ZIP_PATH="$HOME/Downloads/DevCut-Studio-v0.9.1-OWNER.zip"
+  elif [[ -f "$HOME/Downloads/DevCut-Studio-v0.9.1-CUSTOMER.zip" ]]; then
+    ZIP_PATH="$HOME/Downloads/DevCut-Studio-v0.9.1-CUSTOMER.zip"
+  else
+    echo "DevCut ZIP not found in Downloads."
+    echo "Download the OWNER or CUSTOMER ZIP first, then rerun this installer with --zip <path>."
+    exit 1
+  fi
+fi
+
+[[ -f "$ZIP_PATH" ]] || { echo "ZIP not found: $ZIP_PATH" >&2; exit 1; }
+ROOT="$(unzip -Z1 "$ZIP_PATH" | awk -F/ 'NF > 1 { print $1; exit }')"
+case "$ROOT" in
+  DevCut-Studio-v0.9.1-OWNER)
+    EXPECTED="3436521b7f937548f09a04374a84d5e7c2969c0c7e17c2d5ca5c8a13d190441d"
+    EDITION="Owner Edition — free for the project owner" ;;
+  DevCut-Studio-v0.9.1-CUSTOMER)
+    EXPECTED="6c6103d721084a7018db8b32fecf6b04325bb7a98829e86766922e53c2e3b54c"
+    EDITION="Customer Edition — $30 one-time lifetime license" ;;
+  *)
+    echo "This ZIP is not a supported DevCut Studio v0.9.1 package." >&2
+    exit 1 ;;
+esac
+ACTUAL="$(shasum -a 256 "$ZIP_PATH" | awk '{print $1}')"
+if [[ "$ACTUAL" != "$EXPECTED" ]]; then
+  echo "ZIP checksum verification failed. Nothing was installed." >&2
   exit 1
 fi
 
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/devcut-install.XXXXXX")"
 cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
-BASE_URL="https://raw.githubusercontent.com/ghostfacethegreat/devcut/main/packages"
-PACKAGE="$TMP_DIR/DevCut-Studio-CUSTOMER.zip"
-CHECKSUM="$TMP_DIR/DevCut-Studio-CUSTOMER.zip.sha256"
+unzip -q "$ZIP_PATH" -d "$TMP_DIR"
+SOURCE_DIR="$TMP_DIR/$ROOT"
+[[ -f "$SOURCE_DIR/install_local.sh" ]] || { echo "The ZIP is missing its installer." >&2; exit 1; }
 
 printf '\033[96m\n  DEVCUT STUDIO  /  INSTALLER\033[0m\n'
-printf '  Downloading the verified macOS package...\n\n'
-curl --fail --location --silent --show-error "$BASE_URL/DevCut-Studio-CUSTOMER.zip" -o "$PACKAGE"
-curl --fail --location --silent --show-error "$BASE_URL/DevCut-Studio-CUSTOMER.zip.sha256" -o "$CHECKSUM"
-EXPECTED="$(awk 'NR==1 {print $1}' "$CHECKSUM")"
-ACTUAL="$(shasum -a 256 "$PACKAGE" | awk '{print $1}')"
-if [[ -z "$EXPECTED" || "$EXPECTED" != "$ACTUAL" ]]; then
-  echo "Package checksum verification failed. Nothing was installed." >&2
-  exit 1
-fi
-
-unzip -q "$PACKAGE" -d "$TMP_DIR"
-SOURCE_DIR="$TMP_DIR/DevCut-Studio-v0.9.1-CUSTOMER"
-[[ -f "$SOURCE_DIR/install_local.sh" ]] || { echo "The downloaded package is incomplete." >&2; exit 1; }
-
-# Owner key must only come from the owner's local archive or an earlier local owner install.
-if [[ -n "$OWNER_ZIP" ]]; then
-  MEMBER="DevCut-Studio-v0.9.1-OWNER/owner_keys/ed25519_private.pem"
-  if ! unzip -Z1 "$OWNER_ZIP" | grep -Fxq "$MEMBER"; then
-    echo "The selected Owner ZIP does not contain its expected private key." >&2
-    exit 1
-  fi
-  mkdir -p "$SOURCE_DIR/owner_keys"
-  unzip -p "$OWNER_ZIP" "$MEMBER" > "$SOURCE_DIR/owner_keys/ed25519_private.pem"
-  chmod 600 "$SOURCE_DIR/owner_keys/ed25519_private.pem"
-elif [[ -f "$HOME/Library/Application Support/DevCut/owner/ed25519_private.pem" ]]; then
-  mkdir -p "$SOURCE_DIR/owner_keys"
-  cp "$HOME/Library/Application Support/DevCut/owner/ed25519_private.pem" "$SOURCE_DIR/owner_keys/ed25519_private.pem"
-  chmod 600 "$SOURCE_DIR/owner_keys/ed25519_private.pem"
-fi
-
-if [[ -f "$SOURCE_DIR/owner_keys/ed25519_private.pem" ]]; then
-  printf '\033[92m  Owner key detected. Installing your free Owner Edition.\033[0m\n\n'
-else
-  printf '\033[93m  Installing Customer Edition. A $30 lifetime license is required to activate it.\033[0m\n\n'
-fi
+printf '  Verified package: %s\n\n' "$EDITION"
 bash "$SOURCE_DIR/install_local.sh"
+printf '\n\033[92m  Installation finished. Open DevCut Studio from Applications/Terminal launcher.\033[0m\n'
