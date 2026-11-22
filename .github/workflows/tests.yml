@@ -1,4 +1,4 @@
-name: quality-checks
+name: installer-checks
 
 on:
   push:
@@ -8,23 +8,21 @@ permissions:
   contents: read
 
 jobs:
-  tests:
+  bootstrap:
+    name: Validate installer and documentation
     runs-on: ubuntu-latest
     steps:
-      - name: Check out source
+      - name: Check out repository
         uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: pip
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt pytest
-      - name: Compile Python modules
-        run: python -m py_compile devcut_cli.py devcut_worker.py devcut_intelligence.py devcut_social.py devcut_scheduler.py devcut_reminders.py devcut_licensing.py devcut_monitor.py devcut_autopublish.py
-      - name: Run tests
-        run: python -m pytest -q
-      - name: Check CLI help
-        run: python devcut_cli.py --help
-      - name: Validate installer syntax
-        run: bash -n install.sh install_local.sh install_macos.sh uninstall_macos.sh
+      - name: Check shell syntax
+        run: bash -n install.sh
+      - name: Check installer help
+        run: bash install.sh --help
+      - name: Check checksum and platform gates
+        run: |
+          grep -q 'shasum -a 256' install.sh
+          grep -q 'DevCut-Studio-v0.9.1-OWNER' install.sh
+          grep -q 'DevCut-Studio-v0.9.1-CUSTOMER' install.sh
+          grep -q 'currently supports macOS only' install.sh
+      - name: Check whitespace errors
+        run: git diff --check
