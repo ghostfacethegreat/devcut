@@ -1,0 +1,30 @@
+name: quality-checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt pytest
+      - name: Compile Python modules
+        run: python -m py_compile devcut_cli.py devcut_worker.py devcut_intelligence.py devcut_social.py devcut_scheduler.py devcut_reminders.py devcut_licensing.py devcut_monitor.py devcut_autopublish.py
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Check CLI help
+        run: python devcut_cli.py --help
+      - name: Validate installer syntax
+        run: bash -n install.sh install_local.sh install_macos.sh uninstall_macos.sh
